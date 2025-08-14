@@ -2,9 +2,9 @@
 
 ## Terraform Configuration
 
-**Important**: Update the VPC ID and subnet ID in `terraform/main.tf` to match your AWS account:
-- `vpc_id` (line 7)
-- `subnet_id` (line 13)
+**Important**: Copy `terraform/terraform.tfvars.example` to `terraform/terraform.tfvars` and update with your AWS values:
+- `subnet_id`
+- `allowed_ip`
 
 ### Resources Created
 - EC2 instance (m5.xlarge)

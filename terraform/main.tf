@@ -15,7 +15,11 @@ provider "aws" {
 variable "subnet_id" {
   description = "Subnet ID"
   type        = string
-  default     = "subnet-0d51ab015bd87dce2"
+}
+
+variable "allowed_ip" {
+  description = "IP address allowed for SSH and HTTP access"
+  type        = string
 }
 
 data "aws_subnet" "main" {
@@ -57,7 +61,7 @@ resource "aws_security_group" "main" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["3.83.200.219/32"]
+    cidr_blocks = [var.allowed_ip]
   }
 
   egress {
@@ -72,7 +76,7 @@ resource "aws_security_group" "main" {
     from_port   = 3000
     to_port     = 7000
     protocol    = "tcp"
-    cidr_blocks = ["3.83.200.219/32"]
+    cidr_blocks = [var.allowed_ip]
   }
 
   ingress {
@@ -80,7 +84,7 @@ resource "aws_security_group" "main" {
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
-    cidr_blocks = ["3.83.200.219/32"]
+    cidr_blocks = [var.allowed_ip]
   }
 
 }
