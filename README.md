@@ -21,7 +21,8 @@ Ensure you have:
 
 ### TIPS
 - Recreate EC2
+```bash
 terraform taint aws_instance.main
 terraform apply -auto-approve
-
+```
 
