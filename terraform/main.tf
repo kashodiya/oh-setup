@@ -9,7 +9,19 @@ terraform {
 }
 
 provider "aws" {
-  region = "us-east-1"
+  region  = "us-east-1"
+  profile = var.aws_profile
+}
+
+variable "aws_profile" {
+  description = "AWS profile name to use"
+  type        = string
+  default     = "default"
+}
+
+variable "project_name" {
+  description = "Project name used as prefix for all AWS resources"
+  type        = string
 }
 
 variable "subnet_id" {
@@ -32,6 +44,18 @@ variable "openhands_vscode_token" {
   description = "VSCode connection token for OpenHands"
   type        = string
   sensitive   = true
+}
+
+variable "admin_password" {
+  description = "Admin password for applications"
+  type        = string
+  sensitive   = true
+}
+
+variable "ami_id" {
+  description = "AMI ID for the EC2 instance"
+  type        = string
+  default     = "ami-0de716d6197524dd9" # Amazon Linux 2023
 }
 
 data "aws_subnet" "main" {
@@ -65,7 +89,7 @@ resource "null_resource" "internet_check" {
 }
 
 resource "aws_security_group" "main" {
-  name_prefix = "main-sg"
+  name_prefix = "${var.project_name}-sg"
   vpc_id      = data.aws_subnet.main.vpc_id
 
   ingress {
@@ -83,13 +107,7 @@ resource "aws_security_group" "main" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  ingress {
-    description = "For apps"
-    from_port   = 3000
-    to_port     = 7000
-    protocol    = "tcp"
-    cidr_blocks = var.allowed_ips
-  }
+
 
   ingress {
     description = "For openhands"
@@ -99,6 +117,13 @@ resource "aws_security_group" "main" {
     cidr_blocks = var.allowed_ips
   }
 
+  ingress {
+    description = "For Caddy"
+    from_port   = 5000
+    to_port     = 9000
+    protocol    = "tcp"
+    cidr_blocks = var.allowed_ips
+  }
 
   ingress {
     description = "HTTP"
@@ -116,7 +141,7 @@ resource "tls_private_key" "main" {
 }
 
 resource "aws_key_pair" "main" {
-  key_name   = "main-key"
+  key_name   = "${var.project_name}-key"
   public_key = tls_private_key.main.public_key_openssh
 }
 
@@ -126,7 +151,7 @@ resource "local_file" "private_key" {
 }
 
 resource "aws_instance" "main" {
-  ami                    = "ami-08a0d1e16fc3f61ea" # Amazon Linux 2 AMI
+  ami                    = var.ami_id
   instance_type          = "m5.xlarge"
   subnet_id              = var.subnet_id
   vpc_security_group_ids = [aws_security_group.main.id]
@@ -142,7 +167,8 @@ resource "aws_instance" "main" {
 
   depends_on = [
     aws_ssm_parameter.openhands_litellm_key,
-    aws_ssm_parameter.openhands_vscode_token
+    aws_ssm_parameter.openhands_vscode_token,
+    aws_s3_object.source
   ]
 
   lifecycle {
@@ -150,7 +176,8 @@ resource "aws_instance" "main" {
   }
 
   tags = {
-    Name = "main-instance"
+    Name = "${var.project_name}-instance"
+    ProjectName = var.project_name
   }
 }
 
@@ -159,12 +186,12 @@ resource "aws_eip" "main" {
   domain   = "vpc"
 
   tags = {
-    Name = "main-eip"
+    Name = "${var.project_name}-eip"
   }
 }
 
 resource "aws_iam_role" "main" {
-  name = "main-instance-role"
+  name = "${var.project_name}-instance-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -209,38 +236,86 @@ resource "aws_iam_role_policy" "bedrock" {
   })
 }
 
+resource "aws_iam_role_policy" "s3_access" {
+  name = "s3-access"
+  role = aws_iam_role.main.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject"
+        ]
+        Resource = "${aws_s3_bucket.source.arn}/*"
+      }
+    ]
+  })
+}
+
 resource "aws_iam_instance_profile" "main" {
-  name = "main-instance-profile"
+  name = "${var.project_name}-instance-profile"
   role = aws_iam_role.main.name
 }
 
 resource "aws_ssm_parameter" "openhands_litellm_key" {
-  name  = "/openhands/litellm-key"
+  name  = "/${var.project_name}/litellm-key"
   type  = "SecureString"
   value = var.openhands_litellm_key
 
   tags = {
-    Name = "OpenHands LiteLLM Key"
+    Name = "${var.project_name} LiteLLM Key"
   }
 }
 
 resource "aws_ssm_parameter" "openhands_vscode_token" {
-  name  = "/openhands/vscode-token"
+  name  = "/${var.project_name}/vscode-token"
   type  = "SecureString"
   value = var.openhands_vscode_token
 
   tags = {
-    Name = "OpenHands VSCode Token"
+    Name = "${var.project_name} VSCode Token"
   }
 }
 
 resource "aws_ssm_parameter" "openhands_elastic_ip" {
-  name  = "openhands_elastic_ip"
+  name  = "${var.project_name}_elastic_ip"
   type  = "String"
   value = aws_eip.main.public_ip
 
   tags = {
-    Name = "OpenHands Elastic IP"
+    Name = "${var.project_name} Elastic IP"
+  }
+}
+
+resource "aws_ssm_parameter" "source_zip_location" {
+  name  = "/${var.project_name}/source-zip-location"
+  type  = "String"
+  value = "s3://${aws_s3_bucket.source.id}/${aws_s3_object.source.key}"
+
+  tags = {
+    Name = "${var.project_name} Source Zip Location"
+  }
+}
+
+resource "aws_ssm_parameter" "project_name" {
+  name  = "/oh-setup/project-name"
+  type  = "String"
+  value = var.project_name
+
+  tags = {
+    Name = "OH Setup Project Name"
+  }
+}
+
+resource "aws_ssm_parameter" "admin_password" {
+  name  = "/${var.project_name}/admin-password"
+  type  = "SecureString"
+  value = var.admin_password
+
+  tags = {
+    Name = "${var.project_name} Admin Password"
   }
 }
 
@@ -252,6 +327,12 @@ resource "local_file" "outputs" {
     KEY_PAIR_NAME=${aws_key_pair.main.key_name}
     SUBNET_ID=${var.subnet_id}
     VPC_ID=${data.aws_subnet.main.vpc_id}
+    S3_BUCKET_ID=${aws_s3_bucket.source.id}
+    IAM_ROLE_ARN=${aws_iam_role.main.arn}
+    IAM_INSTANCE_PROFILE_ARN=${aws_iam_instance_profile.main.arn}
+    INTERNET_GATEWAY_ID=${data.aws_internet_gateway.main.id}
+    ROUTE_TABLE_ID=${data.aws_route_table.subnet_rt.id}
+    VSCODE_TOKEN=${var.openhands_vscode_token}
   EOT
   filename = "outputs.env"
 }
@@ -278,4 +359,42 @@ output "key_pair_name" {
 
 output "vpc_id" {
   value = data.aws_subnet.main.vpc_id
+}
+
+output "s3_bucket_id" {
+  value = aws_s3_bucket.source.id
+}
+
+output "iam_role_arn" {
+  value = aws_iam_role.main.arn
+}
+
+output "iam_instance_profile_arn" {
+  value = aws_iam_instance_profile.main.arn
+}
+
+output "internet_gateway_id" {
+  value = data.aws_internet_gateway.main.id
+}
+
+output "route_table_id" {
+  value = data.aws_route_table.subnet_rt.id
+}
+
+resource "aws_s3_bucket" "source" {
+  bucket = "${var.project_name}-source-bucket"
+}
+
+data "archive_file" "source" {
+  type        = "zip"
+  source_dir  = "${path.module}/.."
+  output_path = "${path.module}/../temp/${var.project_name}-source.zip"
+  excludes    = ["temp", ".git", "terraform/.terraform", "terraform/terraform.tfstate*"]
+}
+
+resource "aws_s3_object" "source" {
+  bucket = aws_s3_bucket.source.id
+  key    = "${var.project_name}/source/${var.project_name}-source.zip"
+  source = data.archive_file.source.output_path
+  etag   = data.archive_file.source.output_md5
 }

@@ -1,0 +1,6 @@
+# OpenHands
+:5002 {
+    import common
+    import auth_basic
+    reverse_proxy localhost:3002
+}

@@ -1,0 +1,9 @@
+# Portainer
+:5003 {
+    import common
+    reverse_proxy https://localhost:3003 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+    }    
+}

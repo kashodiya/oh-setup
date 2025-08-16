@@ -1,33 +1,9 @@
+temp/
+terraform/outputs.env
+
 # Terraform
 *.tfstate
 *.tfstate.*
 *.tfvars
-*.tfvars.json
 .terraform/
 .terraform.lock.hcl
-terraform.tfplan
-terraform.tfplan.*
-*.auto.tfvars
-crash.log
-crash.*.log
-override.tf
-override.tf.json
-*_override.tf
-*_override.tf.json
-
-# Generated files
-terraform/key.pem
-terraform/outputs.env
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Logs
-*.log

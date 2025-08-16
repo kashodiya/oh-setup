@@ -1,0 +1,20 @@
+{
+    auto_https off
+}
+(common) {
+    encode gzip
+    tls /etc/caddy/certs/server.crt /etc/caddy/certs/server.key
+}
+(auth_basic) {
+    basicauth /* {
+        import /etc/caddy/users.txt
+    }
+    request_header X-Authenticated-User {http.auth.user.id}
+}
+
+# Just for test
+:7100 {
+    respond "Hello from my server!"
+}
+
+import apps/*.Caddyfile

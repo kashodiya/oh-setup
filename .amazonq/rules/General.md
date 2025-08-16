@@ -1,0 +1,1 @@
+AWS ClI is already installed. Please use it to debug or check anything on AWS. Use us-east-1 as default region. Use the profile mentioned in aws_profile in terraform\terraform.tfvars. You will be able to get AWS related IDs in terraform\outputs.env file.

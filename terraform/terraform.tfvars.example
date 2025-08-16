@@ -1,5 +1,9 @@
 # Copy this file to terraform.tfvars and update with your values
+aws_profile = "default"
+project_name = "my-project"
 subnet_id = "subnet-xxxxxxxxxxxxxxxxx"
 allowed_ips = ["x.x.x.x/32", "y.y.y.y/32"]
+ami_id = "ami-0de716d6197524dd9"  # Amazon Linux 2023
 openhands_litellm_key = "your-litellm-api-key"
 openhands_vscode_token = "your-vscode-connection-token"
+admin_password = "your-admin-password"
