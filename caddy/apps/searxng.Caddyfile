@@ -1,0 +1,5 @@
+# SearXNG
+:5005 {
+    import common
+    reverse_proxy localhost:3005
+}

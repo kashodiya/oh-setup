@@ -22,7 +22,7 @@ Ensure you have:
    - `subnet_id` - Your VPC subnet ID (e.g., "subnet-xxxxxxxxxxxxxxxxx")
    - `allowed_ips` - List of IP addresses with CIDR notation (e.g., ["1.2.3.4/32", "5.6.7.8/32"])
    - `openhands_litellm_key` - Your LiteLLM API key
-   - `openhands_vscode_token` - Your VS Code connection token
+
 
 ### Source Deployment Scheme
 
@@ -31,6 +31,76 @@ Ensure you have:
 3. **Parameter Store**: S3 location is stored in AWS Parameter Store as `/{project_name}/source-zip-location`
 4. **EC2 User Data**: Instance downloads zip from S3, extracts to `/home/ec2-user/`, and runs installation scripts
 5. **Installation Flow**: `user-data.sh` → `main.sh` → individual install scripts
+
+## Complete EC2 Setup Process
+
+### Phase 1: Infrastructure Provisioning
+1. **Terraform Apply**: Creates AWS resources (EC2, S3, Parameter Store)
+2. **Source Upload**: Zips and uploads `ec2-setup/` to S3
+3. **Instance Launch**: EC2 instance starts with user-data script
+
+### Phase 2: Initial Bootstrap (`user-data.sh`)
+1. **Download Source**: Retrieves zip file from S3 using Parameter Store location
+2. **Extract Files**: Unzips to `/home/ec2-user/source/`
+3. **Launch Main Script**: Executes `main.sh` with proper permissions
+
+### Phase 3: System Setup (`main.sh`)
+1. **System Update**: Updates all system packages via `yum update -y`
+2. **Configuration Retrieval**: Gets secrets from Parameter Store:
+   - LiteLLM API key
+   - Admin password for basic auth
+3. **Docker Installation**: Installs Docker and creates shared network
+4. **Docker Compose**: Installs Docker Compose for container orchestration
+5. **Directory Structure**: Creates `/home/ec2-user/docker/` with app subdirectories
+
+### Phase 4: Application Installation
+Each application is installed via dedicated scripts:
+
+1. **OpenHands** (`setup-openhands-app.sh`)
+   - AI coding assistant platform
+   - Runs on port 3000 (HTTP)
+   - Proxied via Caddy on port 5000 (HTTPS)
+
+2. **LiteLLM** (`setup-litellm.sh`)
+   - LLM proxy server for OpenHands
+   - Handles API key management
+   - Internal service communication
+
+3. **Open WebUI** (`setup-open-webui.sh`)
+   - Web interface for LLM interactions
+   - Alternative UI for AI conversations
+
+4. **SearXNG** (`setup-searxng.sh`)
+   - Privacy-focused search engine
+   - Provides web search capabilities
+
+5. **Portainer** (`setup-portainer.sh`)
+   - Docker container management UI
+   - Runs on port 3003 (HTTP)
+   - Proxied via Caddy on port 5003 (HTTPS)
+
+6. **VSCode Server** (`install-vscode-server.sh`)
+   - Browser-based code editor
+   - Runs on port 3002 (HTTP)
+   - Proxied via Caddy on port 5002 (HTTPS)
+
+7. **Caddy** (`install-caddy.sh`)
+   - Reverse proxy and HTTPS termination
+   - Provides SSL certificates and basic auth
+   - Routes traffic from ports 5000-7000 to apps on 3000-5000
+
+### Phase 5: Service Configuration
+1. **Caddy Setup**: Configures reverse proxy rules for each application
+2. **SSL Certificates**: Automatic HTTPS certificate generation
+3. **Basic Authentication**: Admin user setup with hashed password
+4. **Service Start**: All applications launched via Docker/systemd
+
+### Installation Timeline
+- **0-2 minutes**: Infrastructure creation and instance launch
+- **2-5 minutes**: System updates and Docker installation
+- **5-8 minutes**: Application container downloads and setup
+- **8-10 minutes**: Service configuration and startup
+- **Total**: ~10 minutes for complete deployment
 
 ### Resources Created
 - EC2 instance (m5.xlarge)
@@ -87,10 +157,21 @@ terraform apply -auto-approve
 1. **Prepare**: Update `terraform.tfvars` with your configuration
 2. **Deploy**: Run `terraform apply --auto-approve`
 3. **Monitor**: Use `scripts/tail-logs.bat` to watch installation progress
-4. **Access**: Services available after ~5-10 minutes:
-   - OpenHands: `https://{public_ip}:3000`
-   - VSCode: `https://{public_ip}:3002`
-   - Portainer: `https://{public_ip}:3003`
+4. **Access**: Services available after ~10 minutes:
+   - OpenHands: `https://{public_ip}:5000`
+   - VSCode: `https://{public_ip}:5002`
+   - Portainer: `https://{public_ip}:5003`
+
+### Monitoring Installation Progress
+```bash
+# Watch real-time logs
+scripts/tail-logs.bat
+
+# Check specific service status on EC2
+sudo systemctl status openvscode-server
+docker ps
+docker logs <container_name>
+```
 
 ## Commands
 ```bash

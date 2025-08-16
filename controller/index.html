@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AWS Controller</title>
+    <style>
+        body { font-family: Arial; margin: 40px; background: #f5f5f5; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; }
+        h1 { color: #333; text-align: center; }
+        .status { padding: 15px; margin: 20px 0; border-radius: 5px; font-weight: bold; }
+        .running { background: #d4edda; color: #155724; }
+        .stopped { background: #f8d7da; color: #721c24; }
+        .pending { background: #fff3cd; color: #856404; }
+        button { padding: 12px 24px; margin: 10px 5px; border: none; border-radius: 5px; cursor: pointer; }
+        .start { background: #28a745; color: white; }
+        .stop { background: #dc3545; color: white; }
+        .refresh { background: #007bff; color: white; }
+        .login { background: #007bff; color: white; }
+        .logout { background: #6c757d; color: white; }
+        .info { margin: 20px 0; padding: 15px; background: #e9ecef; border-radius: 5px; }
+        .login-form { margin: 20px 0; }
+        .login-form input { padding: 10px; margin: 5px; border: 1px solid #ddd; border-radius: 4px; width: 200px; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>AWS EC2 <span onclick="whitelistIP()" style="cursor: pointer;">Controller</span></h1>
+        
+        <div id="loginSection">
+            <div class="login-form">
+                <input type="password" id="password" placeholder="Password" />
+                <button class="login" onclick="login()">Login</button>
+            </div>
+        </div>
+        
+        <div id="controlSection" class="hidden">
+            <div id="status" class="status">Loading...</div>
+            <div id="info" class="info"></div>
+            <div>
+                <button class="start" onclick="startInstance()">Start EC2</button>
+                <button class="stop" onclick="stopInstance()">Stop EC2</button>
+                <button class="refresh" onclick="refreshStatus()">Refresh</button>
+                <button class="logout" onclick="logout()">Logout</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function getToken() {
+            return localStorage.getItem('auth_token');
+        }
+        
+        function setToken(token) {
+            localStorage.setItem('auth_token', token);
+        }
+        
+        function clearToken() {
+            localStorage.removeItem('auth_token');
+        }
+        
+        function checkAuth() {
+            const token = getToken();
+            if (token) {
+                document.getElementById('loginSection').classList.add('hidden');
+                document.getElementById('controlSection').classList.remove('hidden');
+                refreshStatus();
+                setInterval(refreshStatus, 10000);
+            } else {
+                document.getElementById('loginSection').classList.remove('hidden');
+                document.getElementById('controlSection').classList.add('hidden');
+            }
+        }
+        
+        async function login() {
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch('/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    setToken(data.token);
+                    checkAuth();
+                } else {
+                    alert('Invalid credentials');
+                }
+            } catch (error) {
+                alert('Login failed');
+            }
+        }
+        
+        function logout() {
+            clearToken();
+            checkAuth();
+        }
+        
+        async function apiCall(path, method = 'GET') {
+            const token = getToken();
+            const response = await fetch(path, { 
+                method,
+                headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+            });
+            
+            if (response.status === 401) {
+                logout();
+                return null;
+            }
+            
+            return response.json();
+        }
+        
+        async function refreshStatus() {
+            try {
+                const data = await apiCall('/status');
+                if (!data) return;
+                const statusDiv = document.getElementById('status');
+                const infoDiv = document.getElementById('info');
+                
+                statusDiv.textContent = `Status: ${data.state.toUpperCase()}`;
+                statusDiv.className = `status ${data.state === 'running' ? 'running' : data.state === 'stopped' ? 'stopped' : 'pending'}`;
+                
+                infoDiv.innerHTML = `<strong>ID:</strong> ${data.id}<br><strong>IP:</strong> ${data.ip}`;
+            } catch (error) {
+                document.getElementById('status').textContent = 'Connection error';
+            }
+        }
+        
+        async function startInstance() {
+            await apiCall('/start', 'POST');
+            setTimeout(refreshStatus, 2000);
+        }
+        
+        async function stopInstance() {
+            await apiCall('/stop', 'POST');
+            setTimeout(refreshStatus, 2000);
+        }
+        
+        async function whitelistIP() {
+            console.log('Starting IP whitelist process...');
+            
+            try {
+                console.log('Fetching public IP from ipify...');
+                const ipResponse = await fetch('https://api.ipify.org/?format=json');
+                const ipData = await ipResponse.json();
+                const ip = ipData.ip;
+                console.log('Detected IP:', ip);
+                
+                console.log('Sending whitelist request to lambda...');
+                const url = `/allow?ip=${ip}`;
+                console.log('Request URL:', url);
+                const response = await fetch(url);
+                console.log('Response status:', response.status);
+                const data = await response.json();
+                console.log('Lambda response:', JSON.stringify(data, null, 2));
+                
+                if (response.ok) {
+                    console.log('IP whitelist successful');
+                    alert(`IP ${ip} has been whitelisted!`);
+                } else {
+                    console.error('IP whitelist failed:', data.error);
+                    console.error('Debug info:', data.debug);
+                    alert('Failed to whitelist IP: ' + data.error + ' (check console for details)');
+                }
+            } catch (error) {
+                console.error('Error in whitelist process:', error);
+                alert('Error whitelisting IP');
+            }
+        }
+        
+        checkAuth();
+    </script>
+</body>
+</html>

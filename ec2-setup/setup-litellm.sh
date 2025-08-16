@@ -10,7 +10,7 @@ services:
     image: ghcr.io/berriai/litellm:main-latest
     container_name: litellm
     ports:
-      - "3001:3000"
+      - "5001:80"
     volumes:
       - ./litellm-config.yml:/app/config.yaml
     restart: unless-stopped

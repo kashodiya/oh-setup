@@ -36,6 +36,40 @@ OPENHANDS_LITELLM_KEY=${OPENHANDS_LITELLM_KEY}
 OPENHANDS_VSCODE_TOKEN=${OPENHANDS_VSCODE_TOKEN}
 EOF
 
+mkdir -p .openhands
+cat > .openhands/settings.json << EOF
+{
+  "language": "en",
+  "agent": "CodeActAgent",
+  "max_iterations": null,
+  "security_analyzer": null,
+  "confirmation_mode": false,
+  "llm_model": "litellm_proxy/Claude4",
+  "llm_api_key": "${OPENHANDS_LITELLM_KEY}",
+  "llm_base_url": "http://litellm",
+  "remote_runtime_resource_factor": 1,
+  "secrets_store": {
+    "provider_tokens": {}
+  },
+  "enable_default_condenser": true,
+  "enable_sound_notifications": false,
+  "enable_proactive_conversation_starters": false,
+  "user_consents_to_analytics": false,
+  "sandbox_base_container_image": null,
+  "sandbox_runtime_container_image": null,
+  "mcp_config": {
+    "sse_servers": [],
+    "stdio_servers": [],
+    "shttp_servers": []
+  },
+  "search_api_key": "",
+  "sandbox_api_key": null,
+  "max_budget_per_task": null,
+  "email": null,
+  "email_verified": null
+}
+EOF
+
 chown -R ec2-user:ec2-user /home/ec2-user/docker/openhands
 
 echo "[OPENHANDS-APP] Pulling runtime image..."

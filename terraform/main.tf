@@ -40,11 +40,7 @@ variable "openhands_litellm_key" {
   sensitive   = true
 }
 
-variable "openhands_vscode_token" {
-  description = "VSCode connection token for OpenHands"
-  type        = string
-  sensitive   = true
-}
+
 
 variable "admin_password" {
   description = "Admin password for applications"
@@ -125,13 +121,7 @@ resource "aws_security_group" "main" {
     cidr_blocks = var.allowed_ips
   }
 
-  ingress {
-    description = "HTTP"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = var.allowed_ips
-  }
+
 
 }
 
@@ -167,7 +157,6 @@ resource "aws_instance" "main" {
 
   depends_on = [
     aws_ssm_parameter.openhands_litellm_key,
-    aws_ssm_parameter.openhands_vscode_token,
     aws_s3_object.source
   ]
 
@@ -269,15 +258,7 @@ resource "aws_ssm_parameter" "openhands_litellm_key" {
   }
 }
 
-resource "aws_ssm_parameter" "openhands_vscode_token" {
-  name  = "/${var.project_name}/vscode-token"
-  type  = "SecureString"
-  value = var.openhands_vscode_token
 
-  tags = {
-    Name = "${var.project_name} VSCode Token"
-  }
-}
 
 resource "aws_ssm_parameter" "openhands_elastic_ip" {
   name  = "${var.project_name}_elastic_ip"
@@ -332,7 +313,8 @@ resource "local_file" "outputs" {
     IAM_INSTANCE_PROFILE_ARN=${aws_iam_instance_profile.main.arn}
     INTERNET_GATEWAY_ID=${data.aws_internet_gateway.main.id}
     ROUTE_TABLE_ID=${data.aws_route_table.subnet_rt.id}
-    VSCODE_TOKEN=${var.openhands_vscode_token}
+    CONTROLLER_URL=${aws_lambda_function_url.controller.function_url}
+
   EOT
   filename = "outputs.env"
 }
@@ -397,4 +379,68 @@ resource "aws_s3_object" "source" {
   key    = "${var.project_name}/source/${var.project_name}-source.zip"
   source = data.archive_file.source.output_path
   etag   = data.archive_file.source.output_md5
+}
+
+# Lambda Controller
+data "archive_file" "controller_zip" {
+  type        = "zip"
+  source_dir  = "${path.module}/../controller"
+  output_path = "${path.module}/../temp/controller.zip"
+}
+
+resource "aws_iam_role" "controller_lambda_role" {
+  name = "${var.project_name}-controller-lambda-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = { Service = "lambda.amazonaws.com" }
+    }]
+  })
+}
+
+resource "aws_iam_role_policy" "controller_lambda_policy" {
+  name = "${var.project_name}-controller-lambda-policy"
+  role = aws_iam_role.controller_lambda_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
+        Resource = "arn:aws:logs:*:*:*"
+      },
+      {
+        Effect = "Allow"
+        Action = ["ec2:DescribeInstances", "ec2:StartInstances", "ec2:StopInstances", "ec2:AuthorizeSecurityGroupIngress"]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = ["ssm:GetParameter"]
+        Resource = "arn:aws:ssm:*:*:parameter/${var.project_name}/*"
+      }
+    ]
+  })
+}
+
+resource "aws_lambda_function" "controller" {
+  filename         = data.archive_file.controller_zip.output_path
+  function_name    = "${var.project_name}-controller"
+  role            = aws_iam_role.controller_lambda_role.arn
+  handler         = "lambda_function.lambda_handler"
+  runtime         = "python3.9"
+  source_code_hash = data.archive_file.controller_zip.output_base64sha256
+}
+
+resource "aws_lambda_function_url" "controller" {
+  function_name      = aws_lambda_function.controller.function_name
+  authorization_type = "NONE"
+}
+
+output "controller_url" {
+  value = aws_lambda_function_url.controller.function_url
 }

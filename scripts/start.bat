@@ -26,9 +26,13 @@ doskey rmhost=call "%SCRIPTS_DIR%\remove-host.bat"
 doskey cdd=cd /d "%PROJECT_ROOT%"
 doskey cds=cd /d "%SCRIPTS_DIR%"
 doskey cdt=cd /d "%TERRAFORM_DIR%"
-doskey openhands=start http://%ELASTIC_IP%:3000
-doskey vscode=start http://%ELASTIC_IP%:3002?tkn=%VSCODE_TOKEN%
-doskey portainer=start https://%ELASTIC_IP%:3003
+doskey openhands=start https://%ELASTIC_IP%:5000
+doskey vscode=start https://%ELASTIC_IP%:5002
+doskey portainer=start https://%ELASTIC_IP%:5003
+doskey openwebui=start https://%ELASTIC_IP%:5004
+doskey searxng=start https://%ELASTIC_IP%:5005
+doskey litellm=start http://%ELASTIC_IP%:5001
+doskey controller=start %CONTROLLER_URL%
 doskey start=call "%SCRIPTS_DIR%\start.bat"
 
 echo.
@@ -48,6 +52,7 @@ echo   Security Group: %SECURITY_GROUP_ID%
 echo   Key Pair: %KEY_PAIR_NAME%
 echo   Subnet ID: %SUBNET_ID%
 echo   VPC ID: %VPC_ID%
+echo   Controller URL: %CONTROLLER_URL%
 echo.
 echo Available Commands:
 echo   1. tf [cmd]     - Run terraform command
@@ -63,11 +68,19 @@ echo  10. cdd          - Change to main project directory
 echo  11. openhands    - Open OpenHands in browser
 echo  12. vscode       - Open VSCode in browser
 echo  13. portainer    - Open Portainer in browser
-echo  14. start        - Reload this menu
+echo  14. openwebui    - Open Open WebUI in browser
+echo  15. searxng      - Open SearXNG in browser
+echo  16. litellm      - Open LiteLLM in browser
+echo  17. controller   - Open AWS Controller in browser
+echo  18. start        - Reload this menu
 echo.
 echo Services (after deployment):
-echo   OpenHands: https://%ELASTIC_IP%:3000
-echo   VSCode:    https://%ELASTIC_IP%:3002?tkn=%VSCODE_TOKEN%
-echo   Portainer: https://%ELASTIC_IP%:3003
+echo   OpenHands:  https://%ELASTIC_IP%:5000
+echo   VSCode:     https://%ELASTIC_IP%:5002
+echo   Portainer:  https://%ELASTIC_IP%:5003
+echo   Open WebUI: https://%ELASTIC_IP%:5004
+echo   SearXNG:    https://%ELASTIC_IP%:5005
+echo   LiteLLM:    http://%ELASTIC_IP%:5001
+echo   Controller: %CONTROLLER_URL%
 echo.
 echo ========================================
