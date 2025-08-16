@@ -17,9 +17,21 @@ variable "subnet_id" {
   type        = string
 }
 
-variable "allowed_ip" {
-  description = "IP address allowed for SSH and HTTP access"
+variable "allowed_ips" {
+  description = "List of IP addresses allowed for SSH and HTTP access"
+  type        = list(string)
+}
+
+variable "openhands_litellm_key" {
+  description = "LiteLLM API key for OpenHands"
   type        = string
+  sensitive   = true
+}
+
+variable "openhands_vscode_token" {
+  description = "VSCode connection token for OpenHands"
+  type        = string
+  sensitive   = true
 }
 
 data "aws_subnet" "main" {
@@ -61,7 +73,7 @@ resource "aws_security_group" "main" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = [var.allowed_ip]
+    cidr_blocks = var.allowed_ips
   }
 
   egress {
@@ -76,15 +88,24 @@ resource "aws_security_group" "main" {
     from_port   = 3000
     to_port     = 7000
     protocol    = "tcp"
-    cidr_blocks = [var.allowed_ip]
+    cidr_blocks = var.allowed_ips
   }
+
+  ingress {
+    description = "For openhands"
+    from_port   = 30000
+    to_port     = 60000
+    protocol    = "tcp"
+    cidr_blocks = var.allowed_ips
+  }
+
 
   ingress {
     description = "HTTP"
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
-    cidr_blocks = [var.allowed_ip]
+    cidr_blocks = var.allowed_ips
   }
 
 }
@@ -111,6 +132,18 @@ resource "aws_instance" "main" {
   vpc_security_group_ids = [aws_security_group.main.id]
   key_name               = aws_key_pair.main.key_name
   user_data              = file("${path.module}/user-data.sh")
+  
+  iam_instance_profile   = aws_iam_instance_profile.main.name
+
+  root_block_device {
+    volume_size = 80
+    volume_type = "gp3"
+  }
+
+  depends_on = [
+    aws_ssm_parameter.openhands_litellm_key,
+    aws_ssm_parameter.openhands_vscode_token
+  ]
 
   lifecycle {
     create_before_destroy = true
@@ -127,6 +160,87 @@ resource "aws_eip" "main" {
 
   tags = {
     Name = "main-eip"
+  }
+}
+
+resource "aws_iam_role" "main" {
+  name = "main-instance-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "ssm" {
+  role       = aws_iam_role.main.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+resource "aws_iam_role_policy_attachment" "cloudwatch" {
+  role       = aws_iam_role.main.name
+  policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+}
+
+resource "aws_iam_role_policy" "bedrock" {
+  name = "bedrock-access"
+  role = aws_iam_role.main.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "bedrock:InvokeModel",
+          "bedrock:InvokeModelWithResponseStream"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_instance_profile" "main" {
+  name = "main-instance-profile"
+  role = aws_iam_role.main.name
+}
+
+resource "aws_ssm_parameter" "openhands_litellm_key" {
+  name  = "/openhands/litellm-key"
+  type  = "SecureString"
+  value = var.openhands_litellm_key
+
+  tags = {
+    Name = "OpenHands LiteLLM Key"
+  }
+}
+
+resource "aws_ssm_parameter" "openhands_vscode_token" {
+  name  = "/openhands/vscode-token"
+  type  = "SecureString"
+  value = var.openhands_vscode_token
+
+  tags = {
+    Name = "OpenHands VSCode Token"
+  }
+}
+
+resource "aws_ssm_parameter" "openhands_elastic_ip" {
+  name  = "openhands_elastic_ip"
+  type  = "String"
+  value = aws_eip.main.public_ip
+
+  tags = {
+    Name = "OpenHands Elastic IP"
   }
 }
 

@@ -1,3 +1,5 @@
 # Copy this file to terraform.tfvars and update with your values
 subnet_id = "subnet-xxxxxxxxxxxxxxxxx"
-allowed_ip = "x.x.x.x/32"
+allowed_ips = ["x.x.x.x/32", "y.y.y.y/32"]
+openhands_litellm_key = "your-litellm-api-key"
+openhands_vscode_token = "your-vscode-connection-token"
