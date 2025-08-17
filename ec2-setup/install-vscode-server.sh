@@ -15,9 +15,9 @@ if [ ! -d "/opt/openvscode-server" ]; then
     tar -xzf "${LATEST_RELEASE}-linux-x64.tar.gz"
     echo "[VSCODE] Extraction completed with exit code: $?"
     echo "[VSCODE] Moving to /opt/openvscode-server..."
-    mv "${LATEST_RELEASE}-linux-x64" /opt/openvscode-server
+    sudo mv "${LATEST_RELEASE}-linux-x64" /opt/openvscode-server
     echo "[VSCODE] Setting ownership..."
-    chown -R ec2-user:ec2-user /opt/openvscode-server
+    sudo chown -R ec2-user:ec2-user /opt/openvscode-server
     echo "[VSCODE] OpenVSCode Server files installed."
     
     # Create systemd service

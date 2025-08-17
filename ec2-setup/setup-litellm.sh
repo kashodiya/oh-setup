@@ -4,7 +4,7 @@ echo "[LITELLM] Setting up LiteLLM service..."
 
 cd /home/ec2-user/docker/litellm
 
-cat > docker-compose.yml << EOF
+sudo -u ec2-user cat > docker-compose.yml << EOF
 services:
   litellm:
     image: ghcr.io/berriai/litellm:main-latest
@@ -27,7 +27,7 @@ networks:
     external: true
 EOF
 
-cat > litellm-config.yml << EOF
+sudo -u ec2-user cat > litellm-config.yml << EOF
 model_list:
   - model_name: Claude3
     litellm_params:
@@ -49,8 +49,6 @@ litellm_settings:
   modify_params: True
   drop_params: true
 EOF
-
-chown -R ec2-user:ec2-user /home/ec2-user/docker/litellm
 
 echo "[LITELLM] Starting LiteLLM service..."
 sudo -u ec2-user docker-compose up -d --quiet-pull

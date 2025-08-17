@@ -4,7 +4,7 @@ echo "[OPENHANDS-APP] Setting up OpenHands application..."
 
 cd /home/ec2-user/docker/openhands
 
-cat > docker-compose.yml << EOF
+sudo -u ec2-user cat > docker-compose.yml << EOF
 services:
   openhands-app:
     image: docker.all-hands.dev/all-hands-ai/openhands:0.50
@@ -31,13 +31,13 @@ networks:
     external: true
 EOF
 
-cat > .env << EOF
+sudo -u ec2-user cat > .env << EOF
 OPENHANDS_LITELLM_KEY=${OPENHANDS_LITELLM_KEY}
 OPENHANDS_VSCODE_TOKEN=${OPENHANDS_VSCODE_TOKEN}
 EOF
 
-mkdir -p .openhands
-cat > .openhands/settings.json << EOF
+sudo -u ec2-user mkdir -p .openhands
+sudo -u ec2-user cat > .openhands/settings.json << EOF
 {
   "language": "en",
   "agent": "CodeActAgent",
@@ -69,8 +69,6 @@ cat > .openhands/settings.json << EOF
   "email_verified": null
 }
 EOF
-
-chown -R ec2-user:ec2-user /home/ec2-user/docker/openhands
 
 echo "[OPENHANDS-APP] Pulling runtime image..."
 docker pull -q docker.all-hands.dev/all-hands-ai/runtime:0.50-nikolaik

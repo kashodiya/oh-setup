@@ -4,7 +4,7 @@ echo "[PORTAINER] Setting up Portainer service..."
 
 cd /home/ec2-user/docker/portainer
 
-cat > docker-compose.yml << EOF
+sudo -u ec2-user cat > docker-compose.yml << EOF
 services:
   portainer:
     image: portainer/portainer-ce
@@ -25,8 +25,6 @@ networks:
   shared_network:
     external: true
 EOF
-
-chown -R ec2-user:ec2-user /home/ec2-user/docker/portainer
 
 echo "[PORTAINER] Starting Portainer service..."
 sudo -u ec2-user docker-compose up -d --quiet-pull

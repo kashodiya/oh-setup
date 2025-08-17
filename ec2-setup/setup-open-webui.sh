@@ -4,7 +4,7 @@ echo "[OPEN-WEBUI] Setting up Open WebUI service..."
 
 cd /home/ec2-user/docker/open-webui
 
-cat > docker-compose.yml << EOF
+sudo -u ec2-user cat > docker-compose.yml << EOF
 services:
   open-webui:
     image: ghcr.io/open-webui/open-webui:main
@@ -14,6 +14,9 @@ services:
     volumes:
       - open-webui:/app/backend/data
     environment:
+      - CODE_EXECUTION_ENGINE=jupyter
+      - CODE_EXECUTION_JUPYTER_URL=http://host.docker.internal:3006
+      # - CODE_EXECUTION_JUPYTER_AUTH=token
       - OPENAI_API_BASE_URLS=http://litellm
       - OPENAI_API_KEYS=\${OPENHANDS_LITELLM_KEY}
       - GLOBAL_LOG_LEVEL=DEBUG
@@ -42,11 +45,9 @@ networks:
     external: true
 EOF
 
-cat > .env << EOF
+sudo -u ec2-user cat > .env << EOF
 OPENHANDS_LITELLM_KEY=${OPENHANDS_LITELLM_KEY}
 EOF
-
-chown -R ec2-user:ec2-user /home/ec2-user/docker/open-webui
 
 echo "[OPEN-WEBUI] Starting Open WebUI service..."
 sudo -u ec2-user docker-compose up -d --quiet-pull

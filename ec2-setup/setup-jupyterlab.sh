@@ -8,8 +8,7 @@ yum install -y python3 python3-pip
 
 # Create jupyter directory
 echo "[JUPYTERLAB] Creating jupyter directory..."
-mkdir -p /home/ec2-user/jupyter
-chown -R ec2-user:ec2-user /home/ec2-user/jupyter
+sudo -u ec2-user mkdir -p /home/ec2-user/jupyter
 
 # Install JupyterLab using pip as ec2-user
 echo "[JUPYTERLAB] Installing JupyterLab with pip..."
@@ -18,7 +17,7 @@ sudo -u ec2-user bash -c 'cd /home/ec2-user/jupyter && pip3 install --user --qui
 # Create JupyterLab configuration
 echo "[JUPYTERLAB] Creating JupyterLab configuration..."
 sudo -u ec2-user mkdir -p /home/ec2-user/.jupyter
-cat > /home/ec2-user/.jupyter/jupyter_lab_config.py << 'EOF'
+sudo -u ec2-user cat > /home/ec2-user/.jupyter/jupyter_lab_config.py << 'EOF'
 c.ServerApp.ip = '0.0.0.0'
 c.ServerApp.port = 3006
 c.ServerApp.open_browser = False
@@ -27,7 +26,6 @@ c.ServerApp.token = ''
 c.ServerApp.password = ''
 c.ServerApp.disable_check_xsrf = True
 EOF
-chown ec2-user:ec2-user /home/ec2-user/.jupyter/jupyter_lab_config.py
 
 # Create systemd service
 echo "[JUPYTERLAB] Creating systemd service..."

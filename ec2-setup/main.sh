@@ -75,8 +75,7 @@ if [ "$INSTALL_DOCKER" = "true" ]; then
     echo "[MAIN] Docker Compose installation completed with exit code: $?"
     
     echo "[MAIN] Creating Docker directory structure..."
-    mkdir -p /home/ec2-user/docker/{openhands,litellm,portainer,open-webui,searxng}
-    chown -R ec2-user:ec2-user /home/ec2-user/docker
+    sudo -u ec2-user mkdir -p /home/ec2-user/docker/{openhands,litellm,portainer,open-webui,searxng}
 else
     echo "[MAIN] Skipping Docker setup (Docker not installed)"
 fi
