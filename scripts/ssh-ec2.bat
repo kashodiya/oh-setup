@@ -1,5 +1,6 @@
 @echo off
 set "TERRAFORM_DIR=%~dp0..\terraform"
+echo Changing to Terraform directory: %TERRAFORM_DIR%
 if not exist "%TERRAFORM_DIR%\outputs.env" (
     echo Error: outputs.env not found. Run 'terraform apply' first.
     exit /b 1

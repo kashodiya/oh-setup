@@ -10,4 +10,4 @@ set PROFILE=%PROFILE:"=%
 echo Getting Parameter Store values using profile: %PROFILE%
 echo.
 
-aws ssm get-parameters --names "/oh/litellm-key" "/oh/vscode-token" "oh_elastic_ip" "/oh/source-zip-location" "/oh-setup/project-name" --with-decryption --profile %PROFILE% --region us-east-1 --query "Parameters[*].[Name,Value]" --output table
+aws ssm get-parameters --names "/oh/litellm-key" "/oh/source-zip-location" "/oh/elastic-ip" "/oh/project-name" --with-decryption --profile %PROFILE% --region us-east-1 --query "Parameters[*].[Name,Value]" --output table

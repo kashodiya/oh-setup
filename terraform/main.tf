@@ -261,7 +261,7 @@ resource "aws_ssm_parameter" "openhands_litellm_key" {
 
 
 resource "aws_ssm_parameter" "openhands_elastic_ip" {
-  name  = "${var.project_name}_elastic_ip"
+  name  = "/${var.project_name}/elastic-ip"
   type  = "String"
   value = aws_eip.main.public_ip
 
@@ -281,7 +281,7 @@ resource "aws_ssm_parameter" "source_zip_location" {
 }
 
 resource "aws_ssm_parameter" "project_name" {
-  name  = "/oh-setup/project-name"
+  name  = "/${var.project_name}/project-name"
   type  = "String"
   value = var.project_name
 
@@ -309,6 +309,7 @@ resource "aws_ssm_parameter" "apps_config" {
     {name = "Portainer", port = 5003, description = "Docker Management", protocol = "https"},
     {name = "Open WebUI", port = 5004, description = "LLM Interface", protocol = "https"},
     {name = "SearXNG", port = 5005, description = "Search Engine", protocol = "https"},
+    {name = "Jupyter", port = 5006, description = "Jupyter Notebook", protocol = "https"},
     {name = "LiteLLM", port = 5001, description = "Lite LLM", protocol = "http"}
   ])
 

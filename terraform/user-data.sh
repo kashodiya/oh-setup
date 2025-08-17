@@ -10,7 +10,7 @@ echo "[USER-DATA] Current directory: $(pwd)"
 
 # Get project name from Parameter Store
 echo "[USER-DATA] Retrieving project name from Parameter Store..."
-PROJECT_NAME=$(aws ssm get-parameter --name "/oh-setup/project-name" --query "Parameter.Value" --output text --region us-east-1)
+PROJECT_NAME=$(aws ssm get-parameter --name "/oh/project-name" --query "Parameter.Value" --output text --region us-east-1)
 echo "[USER-DATA] Project name: $PROJECT_NAME"
 
 # Get source zip location from Parameter Store

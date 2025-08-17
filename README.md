@@ -220,4 +220,11 @@ terraform init -upgrade
 # On EC2
 sudo systemctl cat openvscode-server
 docker restart portainer
+
+sudo systemctl cat jupyterlab
+sudo systemctl restart jupyterlab
+sudo systemctl status jupyterlab
+
+
+
 ```
