@@ -12,6 +12,10 @@ def get_admin_password():
     response = ssm.get_parameter(Name='/oh/admin-password', WithDecryption=True)
     return response['Parameter']['Value']
 
+def get_apps_config():
+    response = ssm.get_parameter(Name='/oh/apps-config')
+    return json.loads(response['Parameter']['Value'])
+
 def verify_password(password):
     return password == get_admin_password()
 
@@ -129,11 +133,18 @@ def lambda_handler(event, context):
         .login-form { margin: 20px 0; }
         .login-form input { padding: 10px; margin: 5px; border: 1px solid #ddd; border-radius: 4px; width: 200px; }
         .hidden { display: none; }
+        .apps-section { margin: 20px 0; }
+        .apps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 15px 0; }
+        .app-card { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; text-align: center; }
+        .app-card h4 { margin: 0 0 5px 0; color: #495057; }
+        .app-card p { margin: 0 0 10px 0; font-size: 12px; color: #6c757d; }
+        .app-link { display: inline-block; padding: 8px 16px; background: #007bff; color: white; text-decoration: none; border-radius: 4px; font-size: 14px; }
+        .app-link:hover { background: #0056b3; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>AWS EC2 <span onclick="whitelistIP()" style="cursor: pointer;">Controller</span></h1>
+        <h1>AWS EC2 <span onclick="whitelistIP()">Controller</span></h1>
         
         <div id="loginSection">
             <div class="login-form">
@@ -150,6 +161,11 @@ def lambda_handler(event, context):
                 <button class="stop" onclick="stopInstance()">Stop EC2</button>
                 <button class="refresh" onclick="refreshStatus()">Refresh</button>
                 <button class="logout" onclick="logout()">Logout</button>
+            </div>
+            
+            <div id="appsSection" class="apps-section hidden">
+                <h3>Available Applications</h3>
+                <div id="appsGrid" class="apps-grid"></div>
             </div>
         </div>
     </div>
@@ -236,11 +252,39 @@ def lambda_handler(event, context):
                 if (!data) return;
                 const statusDiv = document.getElementById('status');
                 const infoDiv = document.getElementById('info');
+                const appsSection = document.getElementById('appsSection');
+                
                 statusDiv.textContent = `Status: ${data.state.toUpperCase()}`;
                 statusDiv.className = `status ${data.state === 'running' ? 'running' : data.state === 'stopped' ? 'stopped' : 'pending'}`;
+                
                 infoDiv.innerHTML = `<strong>ID:</strong> ${data.id}<br><strong>IP:</strong> ${data.ip}`;
+                
+                if (data.state === 'running' && data.ip !== 'N/A') {
+                    appsSection.classList.remove('hidden');
+                    loadApps(data.ip);
+                } else {
+                    appsSection.classList.add('hidden');
+                }
             } catch (error) {
                 document.getElementById('status').textContent = 'Connection error';
+            }
+        }
+        
+        async function loadApps(ip) {
+            try {
+                const apps = await apiCall('/apps');
+                if (!apps) return;
+                
+                const appsGrid = document.getElementById('appsGrid');
+                appsGrid.innerHTML = apps.map(app => `
+                    <div class="app-card">
+                        <h4>${app.name}</h4>
+                        <p>${app.description}</p>
+                        <a href="${app.protocol}://${ip}:${app.port}" target="_blank" class="app-link">Open</a>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Failed to load apps:', error);
             }
         }
         
@@ -317,13 +361,14 @@ def lambda_handler(event, context):
                 debug_info['add_result'] = result
                 
                 if result.get('success'):
+                    message = result.get('message', f'IP {ip_address} added to security group')
                     return {
                         'statusCode': 200,
                         'headers': {
                             'Content-Type': 'application/json',
                             'Access-Control-Allow-Origin': '*'
                         },
-                        'body': json.dumps({'message': f'IP {ip_address} added to security group', 'debug': debug_info})
+                        'body': json.dumps({'message': message})
                     }
             
             return {
@@ -332,7 +377,7 @@ def lambda_handler(event, context):
                     'Content-Type': 'application/json',
                     'Access-Control-Allow-Origin': '*'
                 },
-                'body': json.dumps({'error': 'Failed to add IP or missing IP parameter', 'debug': debug_info})
+                'body': json.dumps({'error': 'Failed to add IP or missing IP parameter'})
             }
         except Exception as e:
             return {
@@ -469,6 +514,19 @@ def lambda_handler(event, context):
                 },
                 'body': json.dumps({'message': 'Stopping'})
             }
+    
+    if method == 'GET' and path == '/apps':
+        apps = get_apps_config()
+        return {
+            'statusCode': 200,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+            },
+            'body': json.dumps(apps)
+        }
     
     return {
         'statusCode': 404,

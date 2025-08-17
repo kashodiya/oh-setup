@@ -300,6 +300,23 @@ resource "aws_ssm_parameter" "admin_password" {
   }
 }
 
+resource "aws_ssm_parameter" "apps_config" {
+  name  = "/${var.project_name}/apps-config"
+  type  = "String"
+  value = jsonencode([
+    {name = "OpenHands", port = 5000, description = "AI Coding Assistant", protocol = "https"},
+    {name = "VSCode", port = 5002, description = "Browser IDE", protocol = "https"},
+    {name = "Portainer", port = 5003, description = "Docker Management", protocol = "https"},
+    {name = "Open WebUI", port = 5004, description = "LLM Interface", protocol = "https"},
+    {name = "SearXNG", port = 5005, description = "Search Engine", protocol = "https"},
+    {name = "LiteLLM", port = 5001, description = "Lite LLM", protocol = "http"}
+  ])
+
+  tags = {
+    Name = "${var.project_name} Apps Configuration"
+  }
+}
+
 resource "local_file" "outputs" {
   content = <<-EOT
     ELASTIC_IP=${aws_eip.main.public_ip}

@@ -17,12 +17,15 @@ echo "[MAIN] Project name: $PROJECT_NAME"
 
 # Retrieve values from Parameter Store
 echo "[MAIN] Retrieving configuration from Parameter Store..."
-export OPENHANDS_LITELLM_KEY=$(aws ssm get-parameter --name "/$PROJECT_NAME/litellm-key" --with-decryption --query "Parameter.Value" --output text --region us-east-1)
+OPENHANDS_LITELLM_KEY=$(aws ssm get-parameter --name "/$PROJECT_NAME/litellm-key" --with-decryption --query "Parameter.Value" --output text --region us-east-1)
+ADMIN_PASSWORD=$(aws ssm get-parameter --name "/$PROJECT_NAME/admin-password" --with-decryption --query "Parameter.Value" --output text --region us-east-1)
 
-export ADMIN_PASSWORD=$(aws ssm get-parameter --name "/$PROJECT_NAME/admin-password" --with-decryption --query "Parameter.Value" --output text --region us-east-1)
+# Export variables for use in child scripts
+export OPENHANDS_LITELLM_KEY
+export ADMIN_PASSWORD
+
 echo "[MAIN] Configuration retrieved successfully."
 echo "[MAIN] LITELLM_KEY length: ${#OPENHANDS_LITELLM_KEY}"
-
 echo "[MAIN] ADMIN_PASSWORD length: ${#ADMIN_PASSWORD}"
 
 # Run installation scripts

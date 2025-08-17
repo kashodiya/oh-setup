@@ -152,12 +152,39 @@ terraform taint aws_instance.main
 terraform apply -auto-approve
 ```
 
+## Controller Interface
+
+The setup includes a web-based controller for managing your EC2 instance:
+
+### Features
+- **EC2 Control**: Start/stop your instance remotely
+- **Status Monitoring**: Real-time instance state and IP address
+- **App Links**: Dynamic list of available applications when instance is running
+- **Authentication**: Password-protected access
+
+### App Links Configuration
+The controller dynamically displays links to your applications by reading configuration from AWS Parameter Store (`/{project_name}/apps-config`). This configuration is automatically created during terraform deployment and includes:
+
+- **OpenHands** (Port 5000): AI Coding Assistant
+- **VSCode** (Port 5002): Browser IDE  
+- **Portainer** (Port 5003): Docker Management
+- **Open WebUI** (Port 5004): LLM Interface
+- **SearXNG** (Port 5005): Search Engine
+
+The app links only appear when your EC2 instance is running and has a public IP address.
+
+### Access
+After deployment, access the controller URL from:
+- `terraform/outputs.env` file
+- `scripts/start.bat` command output
+
 ## Deployment Flow
 
 1. **Prepare**: Update `terraform.tfvars` with your configuration
 2. **Deploy**: Run `terraform apply --auto-approve`
 3. **Monitor**: Use `scripts/tail-logs.bat` to watch installation progress
-4. **Access**: Services available after ~10 minutes:
+4. **Control**: Use the web controller to manage your instance
+5. **Access**: Applications available when instance is running:
    - OpenHands: `https://{public_ip}:5000`
    - VSCode: `https://{public_ip}:5002`
    - Portainer: `https://{public_ip}:5003`
@@ -167,10 +194,22 @@ terraform apply -auto-approve
 # Watch real-time logs
 scripts/tail-logs.bat
 
+# Use web controller to monitor instance status
+# Controller URL available in terraform output
+
 # Check specific service status on EC2
 sudo systemctl status openvscode-server
 docker ps
 docker logs <container_name>
+```
+
+### Controller Management
+```bash
+# Update controller code
+scripts/update-lambda.bat
+
+# View controller logs
+scripts/lambda-logs.bat
 ```
 
 ## Commands

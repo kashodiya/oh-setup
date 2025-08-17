@@ -16,7 +16,7 @@ if exist "%TERRAFORM_DIR%\outputs.env" (
 :: Setup doskey shortcuts with absolute paths
 doskey tf=cd /d "%TERRAFORM_DIR%" ^& terraform $*
 doskey tfa=cd /d "%TERRAFORM_DIR%" ^& terraform apply --auto-approve
-doskey tfd=cd /d "%TERRAFORM_DIR%" ^& terraform destroy --auto-approve
+doskey tfd=cd /d "%TERRAFORM_DIR%" ^& terraform destroy
 doskey tfi=cd /d "%TERRAFORM_DIR%" ^& terraform init -upgrade
 doskey tfp=cd /d "%TERRAFORM_DIR%" ^& terraform plan
 doskey recreate=call "%SCRIPTS_DIR%\recreate-ec2.bat"
@@ -57,7 +57,7 @@ echo.
 echo Available Commands:
 echo   1. tf [cmd]     - Run terraform command
 echo   2. tfa          - Terraform apply --auto-approve
-echo   3. tfd          - Terraform destroy --auto-approve
+echo   3. tfd          - Terraform destroy
 echo   4. tfi          - Terraform init -upgrade
 echo   5. tfp          - Terraform plan
 echo   6. recreate     - Recreate EC2 instance

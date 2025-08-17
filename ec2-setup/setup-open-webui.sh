@@ -25,6 +25,9 @@ services:
       - ENABLE_WEB_SEARCH=True
       - WEB_SEARCH_ENGINE=searxng
       - SEARXNG_QUERY_URL=http://searxng:8080/search?q=<query>
+      - DEFAULT_USER_ROLE=admin
+      - ENABLE_SIGNUP=False
+      - WEBUI_AUTH=False
     ports:
       - "8101:8080"
     restart: always
@@ -37,6 +40,10 @@ volumes:
 networks:
   shared_network:
     external: true
+EOF
+
+cat > .env << EOF
+OPENHANDS_LITELLM_KEY=${OPENHANDS_LITELLM_KEY}
 EOF
 
 chown -R ec2-user:ec2-user /home/ec2-user/docker/open-webui
