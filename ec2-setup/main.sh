@@ -10,6 +10,11 @@ echo "[MAIN] Updating system packages..."
 yum update -y
 echo "[MAIN] System update completed with exit code: $?"
 
+# Install gettext for envsubst
+echo "[MAIN] Installing gettext for template substitution..."
+yum install -y gettext
+echo "[MAIN] gettext installation completed with exit code: $?"
+
 # Get project name - use hardcoded value since it's consistent
 echo "[MAIN] Setting project name..."
 PROJECT_NAME="oh"
@@ -74,8 +79,9 @@ if [ "$INSTALL_DOCKER" = "true" ]; then
     bash /home/ec2-user/source/ec2-setup/install-docker-compose.sh
     echo "[MAIN] Docker Compose installation completed with exit code: $?"
     
-    echo "[MAIN] Creating Docker directory structure..."
-    sudo -u ec2-user mkdir -p /home/ec2-user/docker/{openhands,litellm,portainer,open-webui,searxng}
+    echo "[MAIN] Copying docker configurations..."
+    cp -r /home/ec2-user/source/docker /home/ec2-user/
+    chown -R ec2-user:ec2-user /home/ec2-user/docker
 else
     echo "[MAIN] Skipping Docker setup (Docker not installed)"
 fi

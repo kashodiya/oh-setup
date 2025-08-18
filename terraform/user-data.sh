@@ -50,10 +50,14 @@ else
     exit 1
 fi
 
-# Set permissions only if ec2-setup directory exists
+# Set ownership for all extracted content
+echo "[USER-DATA] Setting ownership for all extracted files..."
+chown -R ec2-user:ec2-user /home/ec2-user/source
+echo "[USER-DATA] Ownership set for entire source directory"
+
+# Set permissions for ec2-setup scripts if directory exists
 if [[ -d "/home/ec2-user/source/ec2-setup" ]]; then
-    echo "[USER-DATA] Setting permissions for ec2-setup directory"
-    chown -R ec2-user:ec2-user /home/ec2-user/source/ec2-setup
+    echo "[USER-DATA] Setting execute permissions for ec2-setup scripts"
     chmod +x /home/ec2-user/source/ec2-setup/*.sh
     echo "[USER-DATA] Permissions set for ec2-setup directory"
     echo "[USER-DATA] ec2-setup contents: $(ls -la /home/ec2-user/source/ec2-setup/)"

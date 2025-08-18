@@ -1,0 +1,19 @@
+services:
+  portainer:
+    image: portainer/portainer-ce
+    container_name: portainer
+    restart: always
+    ports:
+      - "3003:9443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    networks:
+      - shared_network
+
+volumes:
+  portainer_data:
+
+networks:
+  shared_network:
+    external: true
